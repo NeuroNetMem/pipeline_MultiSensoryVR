@@ -4,7 +4,7 @@ Created on Wed Apr  5 14:02:41 2023 by Guido Meijer
 """
 
 import os
-from pykilosort.ibl import run_spike_sorting_ibl, ibl_pykilosort_params, download_test_data
+from pykilosort_functions import run_spike_sorting, pykilosort_params
 
 DATA_FOLDER = 'K:\\NeuropixelData'
 
