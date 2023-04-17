@@ -46,7 +46,7 @@ def run_spike_sorting(bin_file, scratch_dir=None, delete=True,
     assert scratch_dir is not None
     scratch_dir.mkdir(exist_ok=True, parents=True)
     ks_output_dir = Path(ks_output_dir) if ks_output_dir is not None else scratch_dir.joinpath('output')
-    log_file = scratch_dir.joinpath(f"_{START_TIME.isoformat()}_kilosort.log")
+    log_file = scratch_dir.joinpath(f"_{START_TIME.strftime('%Y-%m-%d_%H%M')}_kilosort.log")
     add_default_handler(level=log_level)
     add_default_handler(level=log_level, filename=log_file)
     session_scratch_dir = scratch_dir.joinpath('.kilosort', bin_file.stem)
@@ -82,6 +82,8 @@ def run_spike_sorting(bin_file, scratch_dir=None, delete=True,
 
 def pykilosort_params(bin_file):
     params = KilosortParams()
+    #params.low_memory = True
+    params.ntbuff = 64
     params.preprocessing_function = 'destriping'
     params.probe = probe_geometry(bin_file)
     params.minFR = 0
