@@ -6,6 +6,7 @@ Created on Wed Apr  5 14:02:41 2023 by Guido Meijer
 import os
 import numpy as np
 import json
+from datetime import datetime
 from probeinterface import Probe
 import spikeinterface.extractors as se
 import spikeinterface.preprocessing as spre
@@ -13,7 +14,8 @@ from spikeinterface.extractors.neuropixels_utils import get_neuropixels_sample_s
 from spikeinterface.sorters import run_sorter
 
 # Set data path
-DATA_FOLDER = 'K:\\NeuropixelData'
+DATA_FOLDER = 'D:\\NeuropixelData'
+SPIKE_SORTER = 'pykilosort'
 
 # Load in channel locations (only for data collected with OpenEphys GUI < 0.6)
 channel_locs = np.load('C:\\Users\\Neuropixel\\Documents\\spikeinterface\\channel_locations.npy')
@@ -53,17 +55,25 @@ for root, directory, files in os.walk(DATA_FOLDER):
             
                 # Correct for inter sample shifts
                 rec = spre.highpass_filter(rec)
-                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
                 
+                # Detect and remove bad channels
+                bad_channel_ids, channel_labels = spre.detect_bad_channels(rec)
+                
+                # Correct for inter-sample shifts
+                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
+
+                # Do common reference to remove artifacts
+                rec = spre.common_reference(rec, operator="median", reference="global")
+
             else:
                 # Correct for inter sample shifts
                 rec = spre.highpass_filter(rec)
                 rec = spre.phase_shift(rec)
                 
-            # Detect and interpolate bad channels
-            bad_channel_ids, all_channels = spre.detect_bad_channels(rec)
-            rec = spre.interpolate_bad_channels(rec, bad_channel_ids)
-            rec = spre.highpass_spatial_filter(rec)
+                # Detect and interpolate bad channels
+                bad_channel_ids, all_channels = spre.detect_bad_channels(rec)
+                rec = spre.interpolate_bad_channels(rec, bad_channel_ids)
+                rec = spre.highpass_spatial_filter(rec)
        
         # SpikeGLX recording
         elif any(s.endswith('ap.bin') for s in files):
@@ -81,7 +91,8 @@ for root, directory, files in os.walk(DATA_FOLDER):
             
         # Run Kilosort3
         try:
-            sort = run_sorter('kilosort3', rec, output_folder=os.path.join(root, 'Kilosort3'),
+            datetime.now().strftime('Starting spike sorting at %H:%M')
+            sort = run_sorter(SPIKE_SORTER, rec, output_folder=os.path.join(root, SPIKE_SORTER),
                               verbose=True, docker_image=True)
         except Exception as err:
             print(err)
@@ -95,7 +106,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
             continue
         
         # Delete spikesort_me.flag
-        print('Done!')
+        datetime.now().strftime('Done! At %H:%M')
         os.remove(os.path.join(root, 'spikesort_me.flag'))
              
             
