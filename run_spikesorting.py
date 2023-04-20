@@ -14,8 +14,8 @@ from spikeinterface.extractors.neuropixels_utils import get_neuropixels_sample_s
 from spikeinterface.sorters import run_sorter
 
 # Set data path
+SPIKE_SORTER = 'pykilosort'  
 DATA_FOLDER = 'D:\\NeuropixelData'
-SPIKE_SORTER = 'pykilosort'
 
 # Load in channel locations (only for data collected with OpenEphys GUI < 0.6)
 channel_locs = np.load('C:\\Users\\Neuropixel\\Documents\\spikeinterface\\channel_locations.npy')
