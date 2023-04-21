@@ -13,8 +13,15 @@ import spikeinterface.preprocessing as spre
 from spikeinterface.extractors.neuropixels_utils import get_neuropixels_sample_shifts
 from spikeinterface.sorters import run_sorter
 
+
+from spikeinterface.core import extract_waveforms
+
+from spikeinterface.postprocessing import compute_spike_amplitudes, compute_correlograms
+from spikeinterface.qualitymetrics import compute_quality_metrics
+from spikeinterface.exporters import export_report
+
 # Set data path
-SPIKE_SORTER = 'pykilosort'  
+SPIKE_SORTER = 'kilosort3'  
 DATA_FOLDER = 'D:\\NeuropixelData'
 
 # Load in channel locations (only for data collected with OpenEphys GUI < 0.6)
@@ -55,7 +62,29 @@ for root, directory, files in os.walk(DATA_FOLDER):
             
                 # Correct for inter sample shifts
                 rec = spre.highpass_filter(rec)
+                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
                 
+                """
+                # Correct for inter sample shifts
+                rec = spre.highpass_filter(rec)
+                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
+                    
+                # bad channels
+                bad_channel_ids, channel_labels = spre.detect_bad_channels(rec)
+                out_channels = rec.channel_ids[channel_labels=="out"]
+                noise_and_dead_channels = rec.channel_ids[np.isin(channel_labels, ("noise", "dead"))]
+                
+                # remove out channels
+                rec = rec.remove_channels(out_channels)
+                
+                # interpolate the rest
+                rec = spre.interpolate_bad_channels(rec, noise_and_dead_channels)
+                rec = spre.highpass_spatial_filter(rec)
+                
+                # remove interpolated channels after highpass spatial
+                rec = rec.remove_channels(noise_and_dead_channels)
+                
+                """
                 # Detect and remove bad channels
                 bad_channel_ids, channel_labels = spre.detect_bad_channels(rec)
                 
@@ -64,6 +93,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
                 # Do common reference to remove artifacts
                 rec = spre.common_reference(rec, operator="median", reference="global")
+                
 
             else:
                 # Correct for inter sample shifts
@@ -105,6 +135,17 @@ for root, directory, files in os.walk(DATA_FOLDER):
             # Continue with next recording
             continue
         
+        # Export to phy
+        we = extract_waveforms(rec, sort, os.path.join(root, SPIKE_SORTER, 'sorter_output'), sparse=True)
+        
+        # some computations are done before to control all options
+        compute_spike_amplitudes(we)
+        compute_correlograms(we)
+        compute_quality_metrics(we, metric_names=['snr', 'isi_violation', 'presence_ratio'])
+        
+        # the export process
+        export_report(we, output_folder=os.path.join(root, SPIKE_SORTER, 'sorter_report'))
+                
         # Delete spikesort_me.flag
         datetime.now().strftime('Done! At %H:%M')
         os.remove(os.path.join(root, 'spikesort_me.flag'))
