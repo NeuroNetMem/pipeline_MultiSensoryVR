@@ -11,6 +11,8 @@ pip install spikeinterface[full,widgets]
 mamba install git
 git clone https://github.com/NeuroNetMem/pipeline_Neuropixel
 pip install docker
+pip install ibllib
+pip install spikeinterface-gui
 ```
 
 ### Set up Docker
