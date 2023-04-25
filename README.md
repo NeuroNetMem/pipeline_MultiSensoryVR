@@ -28,7 +28,7 @@ Install WSL2; open a PowerShell terminal and type
 wsl --install 
 ```
 
-### Set up CUDA 
+### Set up your GPU 
 Install the NVIDA GPU driver on Windows (https://www.nvidia.com/download/index.aspx). This should (on Windows) be all you need to do.
 
 #### Optional: if the spikesorting does not use the GPU you might need to install CUDA in WSL
