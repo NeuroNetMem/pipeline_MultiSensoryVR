@@ -57,14 +57,22 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 probe.set_device_channel_indices(np.arange(channel_locs.shape[0]))
                 rec.set_probe(probe, in_place=True)
                 
-                # Set inter sample shift            
-                inter_sample_shifts = get_neuropixels_sample_shifts(384, 12)
-            
-                # Correct for inter sample shifts
-                rec = spre.highpass_filter(rec)
-                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
+                # High pass filter
+                #rec = spre.highpass_filter(rec)
+                
+                # Correct for inter sample shift      
+                #inter_sample_shifts = get_neuropixels_sample_shifts(384, 12)
+                #rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
                 
                 """
+                # Detect bad channels
+                bad_channel_ids, channel_labels = spre.detect_bad_channels(rec, method='mad')
+                rec = rec.remove_channels(bad_channel_ids)
+                
+                # Do common reference to remove artifacts
+                rec = spre.common_reference(rec, operator="median", reference="global")
+                  
+                
                 # Correct for inter sample shifts
                 rec = spre.highpass_filter(rec)
                 rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
@@ -83,26 +91,18 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 
                 # remove interpolated channels after highpass spatial
                 rec = rec.remove_channels(noise_and_dead_channels)
-                
-                """
-                # Detect and remove bad channels
-                bad_channel_ids, channel_labels = spre.detect_bad_channels(rec)
-                
-                # Correct for inter-sample shifts
-                rec = spre.phase_shift(rec, inter_sample_shift=inter_sample_shifts)
-
-                # Do common reference to remove artifacts
-                rec = spre.common_reference(rec, operator="median", reference="global")
-                
-
+                """               
             else:
                 # Correct for inter sample shifts
                 rec = spre.highpass_filter(rec)
                 rec = spre.phase_shift(rec)
                 
                 # Detect and interpolate bad channels
-                bad_channel_ids, all_channels = spre.detect_bad_channels(rec)
-                rec = spre.interpolate_bad_channels(rec, bad_channel_ids)
+                channel_labels, all_channels = spre.detect_bad_channels(rec)
+                out_channels = rec.channel_ids[channel_labels=="out"]
+                noise_and_dead_channels = rec.channel_ids[np.isin(channel_labels, ("noise", "dead"))]
+                rec = rec.remove_channels(out_channels)
+                rec = spre.interpolate_bad_channels(rec, noise_and_dead_channels)
                 rec = spre.highpass_spatial_filter(rec)
        
         # SpikeGLX recording
@@ -121,7 +121,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
             
         # Run Kilosort3
         try:
-            datetime.now().strftime('Starting spike sorting at %H:%M')
+            print(f'Starting spike sorting at {datetime.now().strftime("%H:%M")}')
             sort = run_sorter(SPIKE_SORTER, rec, output_folder=os.path.join(root, SPIKE_SORTER),
                               verbose=True, docker_image=True)
         except Exception as err:
@@ -135,6 +135,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
             # Continue with next recording
             continue
         
+        """
         # Export to phy
         we = extract_waveforms(rec, sort, os.path.join(root, SPIKE_SORTER, 'sorter_output'), sparse=True)
         
@@ -145,9 +146,10 @@ for root, directory, files in os.walk(DATA_FOLDER):
         
         # the export process
         export_report(we, output_folder=os.path.join(root, SPIKE_SORTER, 'sorter_report'))
-                
+        """  
+        
         # Delete spikesort_me.flag
-        datetime.now().strftime('Done! At %H:%M')
+        print(f'Done! At {datetime.now().strftime("%H:%M")}')
         os.remove(os.path.join(root, 'spikesort_me.flag'))
              
             
