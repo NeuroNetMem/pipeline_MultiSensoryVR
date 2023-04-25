@@ -5,7 +5,7 @@ Preprocessing pipeline for Neuropixel recordings
 Install Miniforge (https://github.com/conda-forge/miniforge#mambaforge)
 Open the Miniforge terminal
 ```
-mamba create -n spikeinterface python
+mamba create -n spikeinterface python=3.10
 mamba activate spikeinterface
 pip install spikeinterface[full,widgets]
 mamba install git
@@ -25,7 +25,9 @@ wsl --install
 ### Set up CUDA 
 Install the NVIDA GPU driver on Windows (https://www.nvidia.com/download/index.aspx)
 
-Now we need to enable CUDA in WSL, on Windows this is a bit tricky. Normally when installing CUDA it comes with a graphics driver. In this case WSL is using the Windows driver so we don't want to do a regular CUDA install inside WSL. Instead we want to install CUDA without the GPU driver.
+
+### Optional: if the spikesorting does not use the GPU you might need to install CUDA in WSL
+If you need to enable CUDA in WSL, on Windows this is a bit tricky. Normally when installing CUDA it comes with a graphics driver. In this case WSL is using the Windows driver so we don't want to do a regular CUDA install inside WSL. Instead we want to install CUDA without the GPU driver.
 
 Open the Microsoft Store and install Ubuntu
 Open Ubuntu, it will install itself in WSL on launch
