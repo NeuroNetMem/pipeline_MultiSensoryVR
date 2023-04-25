@@ -27,7 +27,7 @@ probegroup.set_global_device_channel_indices(np.arange(32))
 rec.set_probegroup(probegroup, in_place=True)
 
 # Pre-processing
-rec = si.highpass_filter(rec)
+rec = si.bandpass_filter(rec, freq_min=300, freq_max=6000)
 rec = si.common_reference(rec, operator='median', reference='global')
 
 # Run spike sorting
@@ -42,13 +42,15 @@ we = si.extract_waveforms(rec, sort, os.path.join(output_path, 'waveforms'), ms_
 si.compute_principal_components(we, n_components=3, mode='by_channel_local', whiten=True)
 si.compute_template_similarity(we,  method='cosine_similarity')
 si.compute_spike_amplitudes(we)
+si.compute_unit_locations(we)
 si.compute_correlograms(we)
 si.compute_quality_metrics(we, metric_names=[
-    'snr', 'isi_violation', 'presence_ratio', 'isolation_distance', 'firing_rate', 'l_ratio'])
+    'snr', 'isi_violation', 'presence_ratio', 'isolation_distance', 'firing_rate', 'l_ratio',
+    'amplitude_cutoff'])
 
 # Export to phy
 si.export_to_phy(we, output_folder=os.path.join(output_path, 'phy'))
-        
+
          
          
          
