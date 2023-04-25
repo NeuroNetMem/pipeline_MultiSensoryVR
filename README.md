@@ -8,7 +8,7 @@ Open the Miniforge terminal
 mamba create -n spikeinterface python=3.10
 mamba activate spikeinterface
 pip install spikeinterface[full,widgets]
-mamba install git
+pip install git
 git clone https://github.com/NeuroNetMem/pipeline_Neuropixel
 pip install docker
 pip install ibllib
