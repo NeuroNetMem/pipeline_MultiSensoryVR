@@ -153,7 +153,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
             
         # Get wheel distance
-        wheel_distance = data['longVar'][:, 1]
+        wheel_distance = data['longVar'][:, 1].astype(float)
         
         # Get camera timestamps
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
