@@ -4,6 +4,7 @@ Created on Wed Apr  5 14:02:41 2023 by Guido Meijer
 """
 
 import os
+import time
 import numpy as np
 from datetime import datetime
 from probeinterface import generate_tetrode, ProbeGroup
@@ -26,14 +27,22 @@ for i in range(8):
 probegroup.set_global_device_channel_indices(np.arange(32))
 rec.set_probegroup(probegroup, in_place=True)
 
-# Pre-processing
+# %% Pre-processing
 rec = si.bandpass_filter(rec, freq_min=300, freq_max=6000)
 rec = si.common_reference(rec, operator='median', reference='global')
 
-# Run spike sorting
+# %% Run spike sorting
 print(f'Starting spike sorting at {datetime.now().strftime("%H:%M")}')
+start = time.time()
 sort = run_sorter('mountainsort4', rec, output_folder=output_path, verbose=True, docker_image=True)
+end = time.time()
 print(f'Done with spike sorting! At {datetime.now().strftime("%H:%M")}')
+print(f'Elapsed time: {np.floor((end - start) / 60 / 60).astype(int)} hours '
+      f'and {np.mod(np.round((end - start) / 60), 60).astype(int)} minutes')
+
+# %% Post processing
+print(f'\nStarting post-processing at {datetime.now().strftime("%H:%M")}')
+start = time.time()
 
 # Extract waveforms
 we = si.extract_waveforms(rec, sort, os.path.join(output_path, 'waveforms'), ms_before=1.5, ms_after=2)
@@ -50,6 +59,11 @@ si.compute_quality_metrics(we, metric_names=[
 
 # Export to phy
 si.export_to_phy(we, output_folder=os.path.join(output_path, 'phy'))
+
+end = time.time()
+print(f'Done! At {datetime.now().strftime("%H:%M")}')
+print(f'Elapsed time: {np.floor((end - start) / 60 / 60).astype(int)} hours '
+      f'and {np.mod(np.round((end - start) / 60), 60).astype(int)} minutes')
 
          
          
