@@ -12,7 +12,7 @@ import pandas as pd
 from glob import glob
 from logreader import create_bp_structure, compute_onsets, compute_offsets
 
-DATA_FOLDER = 'K:\\Subjects'
+DATA_FOLDER = 'U:\\guido\\Subjects'
 
 # Search for spikesort_me.flag
 print('Looking for extract_me.flag..')
@@ -40,7 +40,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
             env_start = np.concatenate(([0], time_s[compute_offsets(data['digitalIn'][:, 12])]))
         else:
             env_start = time_s[compute_offsets(data['digitalIn'][:, 12])]
-        
+
         # Extract reward times
         reward_times = time_s[compute_onsets(data['digitalOut'][:, 0])]
         
@@ -59,6 +59,14 @@ for root, directory, files in os.walk(DATA_FOLDER):
         all_sound1_offsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
         all_sound2_offsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
         all_sound3_offsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
+        
+        # Only keep environment entries which are followed by the appearance of the first object
+        discard_env_start = np.zeros(env_start.shape[0])
+        for i, ts in enumerate(env_start[:-1]):
+            if len(all_first_obj_appear[(all_first_obj_appear > ts)
+                                        & (all_first_obj_appear < env_start[i+1])]) == 0:
+                discard_env_start[i] = 1
+        env_start = env_start[~(discard_env_start).astype(bool)]
         
         # Pre-allocate trial arrays
         env_end = np.empty(env_start.shape[0]-1)
@@ -83,12 +91,36 @@ for root, directory, files in os.walk(DATA_FOLDER):
         for i, ts in enumerate(env_start[:-1]):
                         
             # Object enter and exit events
-            obj1_enter[i] = all_obj1_enter[(all_obj1_enter > ts) & (all_obj1_enter < env_start[i+1])][0]
-            obj2_enter[i] = all_obj2_enter[(all_obj2_enter > ts) & (all_obj2_enter < env_start[i+1])][0]
-            obj3_enter[i] = all_obj3_enter[(all_obj3_enter > ts) & (all_obj3_enter < env_start[i+1])][0]
-            obj1_exit[i] = all_obj1_exit[(all_obj1_exit > ts) & (all_obj1_exit < env_start[i+1])][0]
-            obj2_exit[i] = all_obj2_exit[(all_obj2_exit > ts) & (all_obj2_exit < env_start[i+1])][0]
-            obj3_exit[i] = all_obj3_exit[(all_obj3_exit > ts) & (all_obj3_exit < env_start[i+1])][0]
+            these_obj1_enter = all_obj1_enter[(all_obj1_enter > ts) & (all_obj1_enter < env_start[i+1])]
+            if len(these_obj1_enter) > 0:
+                obj1_enter[i] = all_obj1_enter[(all_obj1_enter > ts) & (all_obj1_enter < env_start[i+1])][0]
+            else:
+                obj1_enter[i] = np.nan
+            these_obj2_enter = all_obj2_enter[(all_obj2_enter > ts) & (all_obj2_enter < env_start[i+1])]
+            if len(these_obj1_enter) > 0:
+                obj2_enter[i] = all_obj2_enter[(all_obj2_enter > ts) & (all_obj2_enter < env_start[i+1])][0]
+            else:
+                obj2_enter[i] = np.nan
+            these_obj3_enter = all_obj3_enter[(all_obj3_enter > ts) & (all_obj3_enter < env_start[i+1])]
+            if len(these_obj3_enter) > 0:
+                obj3_enter[i] = all_obj3_enter[(all_obj3_enter > ts) & (all_obj3_enter < env_start[i+1])][0]
+            else:
+                obj3_enter[i] = np.nan
+            these_obj1_exit = all_obj1_exit[(all_obj1_exit > ts) & (all_obj1_exit < env_start[i+1])]
+            if len(these_obj1_exit) > 0:
+                obj1_exit[i] = all_obj1_exit[(all_obj1_exit > ts) & (all_obj1_exit < env_start[i+1])][0]
+            else:
+                obj1_exit[i] = np.nan
+            these_obj2_exit = all_obj2_exit[(all_obj2_exit > ts) & (all_obj2_exit < env_start[i+1])]
+            if len(these_obj1_exit) > 0:
+                obj2_exit[i] = all_obj2_exit[(all_obj2_exit > ts) & (all_obj2_exit < env_start[i+1])][0]
+            else:
+                obj2_exit[i] = np.nan
+            these_obj3_exit = all_obj3_exit[(all_obj3_exit > ts) & (all_obj3_exit < env_start[i+1])]
+            if len(these_obj3_exit) > 0:
+                obj3_exit[i] = all_obj3_exit[(all_obj3_exit > ts) & (all_obj3_exit < env_start[i+1])][0]
+            else:
+                obj3_exit[i] = np.nan
             
             # Number of rewards given per object
             obj1_rewards[i] = np.sum((reward_times >= obj1_enter[i]-0.1) & (reward_times < obj1_exit[i]))
@@ -164,6 +196,18 @@ for root, directory, files in os.walk(DATA_FOLDER):
         
         # Delete extraction flag
         os.remove(join(root, 'extract_me.flag'))
-        print('Successfully extracted session in {root}')
+        if np.sum(np.isnan(obj1_enter)) > 0:
+            print(f'{np.sum(np.isnan(obj1_enter))} missing enterObj1 events')
+        if np.sum(np.isnan(obj2_enter)) > 0:
+            print(f'{np.sum(np.isnan(obj2_enter))} missing enterObj2 events')
+        if np.sum(np.isnan(obj3_enter)) > 0:
+            print(f'{np.sum(np.isnan(obj3_enter))} missing enterObj3 events')
+        if np.sum(np.isnan(obj1_exit)) > 0:
+            print(f'{np.sum(np.isnan(obj1_exit))} missing exitObj1 events')
+        if np.sum(np.isnan(obj2_exit)) > 0:
+            print(f'{np.sum(np.isnan(obj2_exit))} missing exitObj2 events')
+        if np.sum(np.isnan(obj3_exit)) > 0:
+            print(f'{np.sum(np.isnan(obj3_exit))} missing exitObj3 events')
+        print(f'Successfully extracted session in {root}')
         
         
