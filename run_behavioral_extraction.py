@@ -10,9 +10,12 @@ from os.path import join
 import numpy as np
 import pandas as pd
 from glob import glob
+from scipy.ndimage import gaussian_filter1d
 from logreader import create_bp_structure, compute_onsets, compute_offsets
 
 DATA_FOLDER = 'U:\\guido\\Subjects'
+SPEED_BIN_SIZE = 0.1  # s
+SPEED_BIN_SHIFT = 0.02  # s
 
 # Search for spikesort_me.flag
 print('Looking for extract_me.flag..')
@@ -151,13 +154,17 @@ for root, directory, files in os.walk(DATA_FOLDER):
             
             # End of environment
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
-            
-        # Get wheel distance
-        wheel_distance = data['longVar'][:, 1].astype(float)
-        
+                    
         # Get camera timestamps
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
         
+        # Get wheel distance
+        wheel_distance = data['longVar'][:, 1].astype(float)
+        
+        # Calculate speed
+        dist_filt = gaussian_filter1d(wheel_distance, 100)  # smooth wheel distance
+        speed = np.abs(np.diff(dist_filt)) / np.diff(time_s)[0]
+                
         # Save extracted events as ONE files
         np.save(join(root, 'trials.enterObj1.npy'), obj1_enter)
         np.save(join(root, 'trials.enterObj2.npy'), obj2_enter)
@@ -178,8 +185,9 @@ for root, directory, files in os.walk(DATA_FOLDER):
         np.save(join(root, 'trials.exitEnvironment.npy'), env_end)
         np.save(join(root, 'trials.firstObjectAppear.npy'), first_obj_appear)
         np.save(join(root, 'reward.times.npy'), reward_times)
-        np.save(join(root, 'wheel.distance.npy'), wheel_distance)
-        np.save(join(root, 'wheel.times.npy'), time_s)
+        np.save(join(root, 'wheel.distance.npy'), wheel_distance[:-1])
+        np.save(join(root, 'wheel.times.npy'), time_s[:-1])
+        np.save(join(root, 'wheel.speed.npy'), speed)      
         np.save(join(root, 'camera.times.npy'), camera_times)
         
         # Build trial dataframe and also save that
