@@ -208,6 +208,9 @@ for root, directory, files in os.walk(DATA_FOLDER):
         dist_filt = gaussian_filter1d(wheel_distance, 100)  # smooth wheel distance
         speed = np.abs(np.diff(dist_filt)) / np.diff(time_s)[0]
 
+        # Get lick times
+        lick_times = time_s[compute_onsets(data['digitalOut'][:, 5])]
+
         # Save extracted events as ONE files
         np.save(join(root, 'trials.enterObj1.npy'), obj1_enter)
         np.save(join(root, 'trials.enterObj2.npy'), obj2_enter)
@@ -235,6 +238,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
         np.save(join(root, 'wheel.times.npy'), time_s[:-1])
         np.save(join(root, 'wheel.speed.npy'), speed)
         np.save(join(root, 'camera.times.npy'), camera_times)
+        np.save(join(root, 'lick.times.npy'), lick_times)
 
         # Build trial dataframe and also save that
         trials = pd.DataFrame(data={
