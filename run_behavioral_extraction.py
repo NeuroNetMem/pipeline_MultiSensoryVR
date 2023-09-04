@@ -34,6 +34,11 @@ for root, directory, files in os.walk(DATA_FOLDER):
         # Unpack log file
         data = create_bp_structure(data_file[0])
 
+        # Unwind looped timestamps
+        if np.max(np.diff(data['startTS'])) > 10000:
+
+        np.where(np.diff(data['startTS'] > 10000))
+
         # Get timestamps in seconds relative to first timestamp
         time_s = (data['startTS'] - data['startTS'][0]) / 1000000
 
@@ -64,12 +69,15 @@ for root, directory, files in os.walk(DATA_FOLDER):
         all_sound2_offsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
         all_sound3_offsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
 
-        # Only keep environment entries which have a first object appear event
+        # Only keep environment entries which have a first object appear event and a trial end event
         # TO DO: change to object appear
         discard_env_start = np.zeros(env_start.shape[0])
         for i, ts in enumerate(env_start[:-1]):
             if len(all_obj1_enter[(all_obj1_enter > ts)
                                   & (all_obj1_enter < env_start[i+1])]) == 0:
+                discard_env_start[i] = 1
+            if len(all_env_end[(all_env_end > ts)
+                               & (all_env_end < env_start[i+1])]) == 0:
                 discard_env_start[i] = 1
         env_start = env_start[~(discard_env_start).astype(bool)]
 
