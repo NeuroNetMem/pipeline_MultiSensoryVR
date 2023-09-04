@@ -33,15 +33,17 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
         # Unpack log file
         data = create_bp_structure(data_file[0])
-
-        # Unwind looped timestamps
-        if np.max(np.diff(data['startTS'])) > 10000:
-
-        np.where(np.diff(data['startTS'] > 10000))
-
+        
         # Get timestamps in seconds relative to first timestamp
         time_s = (data['startTS'] - data['startTS'][0]) / 1000000
 
+        # Unwind looped timestamps
+        if np.where(np.diff(time_s) < 0)[0].shape[0] == 1:
+            loop_point = np.where(np.diff(time_s) < 0)[0][0]
+            time_s[loop_point+1:] = time_s[loop_point+1:] + time_s[loop_point] 
+        elif np.where(np.diff(time_s) < 0)[0].shape[0] > 1:
+            print('Multiple time loop points detected! This is not supported yet.')
+            
         # Extract trial onsets
         if compute_onsets(data['digitalIn'][:, 8])[0] < compute_onsets(data['digitalIn'][:, 12])[0]:
             # Missed the first environment TTL so first trial starts at 0 s
@@ -93,15 +95,15 @@ for root, directory, files in os.walk(DATA_FOLDER):
         obj1_rewardzone = np.empty(env_start.shape[0]-1)
         obj2_rewardzone = np.empty(env_start.shape[0]-1)
         obj3_rewardzone = np.empty(env_start.shape[0]-1)
-        obj1_rewards = np.empty(env_start.shape[0]-1).astype(int)
-        obj2_rewards = np.empty(env_start.shape[0]-1).astype(int)
-        obj3_rewards = np.empty(env_start.shape[0]-1).astype(int)
-        obj1_position = np.empty(env_start.shape[0]-1).astype(int)
-        obj2_position = np.empty(env_start.shape[0]-1).astype(int)
-        obj3_position = np.empty(env_start.shape[0]-1).astype(int)
+        obj1_rewards = np.zeros(env_start.shape[0]-1).astype(int)
+        obj2_rewards = np.zeros(env_start.shape[0]-1).astype(int)
+        obj3_rewards = np.zeros(env_start.shape[0]-1).astype(int)
+        obj1_position = np.zeros(env_start.shape[0]-1).astype(int)
+        obj2_position = np.zeros(env_start.shape[0]-1).astype(int)
+        obj3_position = np.zeros(env_start.shape[0]-1).astype(int)
         sound_onset = np.empty(env_start.shape[0]-1)
         sound_offset = np.empty(env_start.shape[0]-1)
-        sound_id = np.empty(env_start.shape[0]-1).astype(int)
+        sound_id = np.zeros(env_start.shape[0]-1).astype(int)
 
         # Loop over trials and get events per trial
         for i, ts in enumerate(env_start[:-1]):
@@ -210,7 +212,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
 
         # Get wheel distance
-        wheel_distance = data['longVar'][:, 1].astype(float)
+        wheel_distance = data['longVar'][:, 1].astype(int)
 
         # Calculate speed
         dist_filt = gaussian_filter1d(wheel_distance, 100)  # smooth wheel distance
