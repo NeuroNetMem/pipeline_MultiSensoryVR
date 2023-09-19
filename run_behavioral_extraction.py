@@ -64,12 +64,12 @@ for root, directory, files in os.walk(DATA_FOLDER):
         all_obj1_exit = time_s[compute_offsets(data['digitalIn'][:, 8])]
         all_obj2_exit = time_s[compute_offsets(data['digitalIn'][:, 9])]
         all_obj3_exit = time_s[compute_offsets(data['digitalIn'][:, 10])]
-        all_sound1_onsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
-        all_sound2_onsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
-        all_sound3_onsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
-        all_sound1_offsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
-        all_sound2_offsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
-        all_sound3_offsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
+        all_sound0_onsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
+        all_sound1_onsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
+        all_sound2_onsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
+        all_sound0_offsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
+        all_sound1_offsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
+        all_sound2_offsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
 
         # Only keep environment entries which have a first object appear event and a trial end event
         # TO DO: change to object appear
@@ -186,7 +186,13 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 first_obj_appear[i] = np.nan
 
             # Sound on and offsets
-            if all_sound1_onsets[(all_sound1_onsets > ts) & (all_sound1_onsets < env_start[i+1])].shape[0] > 0:
+            if all_sound0_onsets[(all_sound0_onsets > ts) & (all_sound0_onsets < env_start[i+1])].shape[0] > 0:
+                sound_id[i] = 0
+                sound_onset[i] = all_sound0_onsets[(all_sound0_onsets > ts) & (
+                    all_sound0_onsets < env_start[i+1])][0]
+                sound_offset[i] = all_sound0_offsets[(all_sound0_offsets > ts) & (
+                    all_sound0_offsets < env_start[i+1])][0]
+            elif all_sound1_onsets[(all_sound1_onsets > ts) & (all_sound1_onsets < env_start[i+1])].shape[0] > 0:
                 sound_id[i] = 1
                 sound_onset[i] = all_sound1_onsets[(all_sound1_onsets > ts) & (
                     all_sound1_onsets < env_start[i+1])][0]
@@ -198,12 +204,6 @@ for root, directory, files in os.walk(DATA_FOLDER):
                     all_sound2_onsets < env_start[i+1])][0]
                 sound_offset[i] = all_sound2_offsets[(all_sound2_offsets > ts) & (
                     all_sound2_offsets < env_start[i+1])][0]
-            elif all_sound3_onsets[(all_sound3_onsets > ts) & (all_sound3_onsets < env_start[i+1])].shape[0] > 0:
-                sound_id[i] = 3
-                sound_onset[i] = all_sound3_onsets[(all_sound3_onsets > ts) & (
-                    all_sound3_onsets < env_start[i+1])][0]
-                sound_offset[i] = all_sound3_offsets[(all_sound3_offsets > ts) & (
-                    all_sound3_offsets < env_start[i+1])][0]
 
             # End of environment
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
