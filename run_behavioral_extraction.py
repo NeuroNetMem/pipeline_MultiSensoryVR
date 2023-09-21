@@ -207,7 +207,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
             # End of environment
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
-
+        asd
         # Get camera timestamps
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
 
