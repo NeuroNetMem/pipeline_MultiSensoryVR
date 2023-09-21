@@ -205,7 +205,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
             # End of environment
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
-        
+
         # Get camera timestamps
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
 
@@ -218,20 +218,20 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
         # Get lick times
         lick_times = time_s[compute_onsets(data['digitalOut'][:, 5])]
-        
+
         # Get breathing
         breathing = data['analog'][:, 6]
 
         # Save extracted events as ONE files
         np.save(join(root, 'continuous.wheelDistance.npy'), wheel_distance[:-1])
         np.save(join(root, 'continuous.wheelSpeed.npy'), speed)
-        np.save(join(root, 'continuous.breathing.npy'), breathing)
+        np.save(join(root, 'continuous.breathing.npy'), breathing[:-1])
         np.save(join(root, 'continuous.times.npy'), time_s[:-1])
         np.save(join(root, 'camera.times.npy'), camera_times)
         np.save(join(root, 'lick.times.npy'), lick_times)
         np.save(join(root, 'reward.times.npy'), reward_times)
 
-        # Build trial dataframe 
+        # Build trial dataframe
         trials = pd.DataFrame(data={
             'enterEnvironment': env_start[:-1], 'exitEnvironment': env_end,
             'soundOnset': sound_onset, 'soundOffset': sound_offset, 'soundId': sound_id,
