@@ -14,8 +14,6 @@ from scipy.ndimage import gaussian_filter1d
 from logreader import create_bp_structure, compute_onsets, compute_offsets
 
 DATA_FOLDER = 'U:\\guido\\Subjects'
-SPEED_BIN_SIZE = 0.1  # s
-SPEED_BIN_SHIFT = 0.02  # s
 
 # Search for spikesort_me.flag
 print('Looking for extract_me.flag..')
@@ -207,7 +205,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
             # End of environment
             env_end[i] = all_env_end[(all_env_end > ts) & (all_env_end < env_start[i+1])][0]
-        asd
+        
         # Get camera timestamps
         camera_times = time_s[compute_onsets(data['digitalIn'][:, 11])]
 
@@ -220,37 +218,20 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
         # Get lick times
         lick_times = time_s[compute_onsets(data['digitalOut'][:, 5])]
+        
+        # Get breathing
+        breathing = data['analog'][:, 6]
 
         # Save extracted events as ONE files
-        np.save(join(root, 'trials.enterObj1.npy'), obj1_enter)
-        np.save(join(root, 'trials.enterObj2.npy'), obj2_enter)
-        np.save(join(root, 'trials.enterObj3.npy'), obj3_enter)
-        np.save(join(root, 'trials.exitObj1.npy'), obj1_exit)
-        np.save(join(root, 'trials.exitObj2.npy'), obj2_exit)
-        np.save(join(root, 'trials.exitObj3.npy'), obj3_exit)
-        np.save(join(root, 'trials.nRewardsObj1.npy'), obj1_rewards)
-        np.save(join(root, 'trials.nRewardsObj2.npy'), obj2_rewards)
-        np.save(join(root, 'trials.nRewardsObj3.npy'), obj3_rewards)
-        np.save(join(root, 'trials.enterRewardZoneObj1.npy'), obj1_rewardzone)
-        np.save(join(root, 'trials.enterRewardZoneObj2.npy'), obj2_rewardzone)
-        np.save(join(root, 'trials.enterRewardZoneObj3.npy'), obj3_rewardzone)
-        np.save(join(root, 'trials.positionObj1.npy'), obj1_position)
-        np.save(join(root, 'trials.positionObj2.npy'), obj2_position)
-        np.save(join(root, 'trials.positionObj3.npy'), obj3_position)
-        np.save(join(root, 'trials.soundOnset.npy'), sound_onset)
-        np.save(join(root, 'trials.soundOffset.npy'), sound_offset)
-        np.save(join(root, 'trials.soundId.npy'), sound_id)
-        np.save(join(root, 'trials.enterEnvironment.npy'), env_start[:-1])
-        np.save(join(root, 'trials.exitEnvironment.npy'), env_end)
-        np.save(join(root, 'trials.firstObjectAppear.npy'), first_obj_appear)
-        np.save(join(root, 'reward.times.npy'), reward_times)
-        np.save(join(root, 'wheel.distance.npy'), wheel_distance[:-1])
-        np.save(join(root, 'wheel.times.npy'), time_s[:-1])
-        np.save(join(root, 'wheel.speed.npy'), speed)
+        np.save(join(root, 'continuous.wheelDistance.npy'), wheel_distance[:-1])
+        np.save(join(root, 'continuous.wheelSpeed.npy'), speed)
+        np.save(join(root, 'continuous.breathing.npy'), breathing)
+        np.save(join(root, 'continuous.times.npy'), time_s[:-1])
         np.save(join(root, 'camera.times.npy'), camera_times)
         np.save(join(root, 'lick.times.npy'), lick_times)
+        np.save(join(root, 'reward.times.npy'), reward_times)
 
-        # Build trial dataframe and also save that
+        # Build trial dataframe 
         trials = pd.DataFrame(data={
             'enterEnvironment': env_start[:-1], 'exitEnvironment': env_end,
             'soundOnset': sound_onset, 'soundOffset': sound_offset, 'soundId': sound_id,
