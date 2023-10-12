@@ -15,7 +15,10 @@ parser.add_argument("-e", "--ephys", help="Ephys session", action='store_true')
 args = parser.parse_args()
 
 # Set path to save data
-PATH = 'K:\\Subjects'
+if args.ephys:
+    PATH = 'D:\\NeuropixelData'  # SSD
+else:
+    PATH = 'K:\\Subjects'
 
 # Get date of today
 this_date = date.today().strftime('%Y%m%d')
@@ -40,7 +43,9 @@ while subject_name != 'q':
         mkdir(join(PATH, subject_name, this_date, 'raw_video_data'))
         if args.ephys:
             mkdir(join(PATH, subject_name, this_date, 'raw_ephys_data'))    
-        print(f'Created session {this_date} for {subject_name}')
+            print(f'Created ephys session {this_date} for {subject_name}')
+        else:
+            print(f'Created session {this_date} for {subject_name}')
         
     # Create flags
     if not isfile(join(PATH, subject_name, this_date, 'extract_me.flag')):
