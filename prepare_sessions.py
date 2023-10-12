@@ -8,7 +8,11 @@ Created on Mon Aug 21 11:01:06 2023
 from os import mkdir
 from os.path import join, isdir, isfile
 from datetime import date
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-e", "--ephys", help="Ephys session", action='store_true')
+args = parser.parse_args()
 
 # Set path to save data
 PATH = 'K:\\Subjects'
@@ -34,17 +38,24 @@ while subject_name != 'q':
         mkdir(join(PATH, subject_name, this_date))
         mkdir(join(PATH, subject_name, this_date, 'raw_behavior_data'))
         mkdir(join(PATH, subject_name, this_date, 'raw_video_data'))
+        if args.ephys:
+            mkdir(join(PATH, subject_name, this_date, 'raw_ephys_data'))    
         print(f'Created session {this_date} for {subject_name}')
         
-    # Create extraction flag
+    # Create flags
     if not isfile(join(PATH, subject_name, this_date, 'extract_me.flag')):
         with open(join(PATH, subject_name, this_date, 'extract_me.flag'), 'w') as fp:
             pass
-        
-    # Create transfer flag
     if not isfile(join(PATH, subject_name, this_date, 'transfer_me.flag')):
         with open(join(PATH, subject_name, this_date, 'transfer_me.flag'), 'w') as fp:
             pass
+    if args.ephys:
+        if not isfile(join(PATH, subject_name, this_date, 'spikesort_me.flag')):
+            with open(join(PATH, subject_name, this_date, 'spikesort_me.flag'), 'w') as fp:
+                pass
+        if not isfile(join(PATH, subject_name, this_date, 'videotrack_me.flag')):
+            with open(join(PATH, subject_name, this_date, 'videotrack_me.flag'), 'w') as fp:
+                pass
     
     # Get mouse name
     subject_name = input('Subject name (q to quit): ')
