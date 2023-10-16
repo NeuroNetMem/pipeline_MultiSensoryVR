@@ -55,9 +55,6 @@ while subject_name != 'q':
         with open(join(PATH, subject_name, this_date, 'transfer_me.flag'), 'w') as fp:
             pass
     if args.ephys:
-        if not isfile(join(PATH, subject_name, this_date, 'spikesort_me.flag')):
-            with open(join(PATH, subject_name, this_date, 'spikesort_me.flag'), 'w') as fp:
-                pass
         if not isfile(join(PATH, subject_name, this_date, 'videotrack_me.flag')):
             with open(join(PATH, subject_name, this_date, 'videotrack_me.flag'), 'w') as fp:
                 pass

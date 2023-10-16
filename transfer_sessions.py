@@ -8,8 +8,16 @@ Created on Thu Aug 24 15:06:13 2023
 import os
 from os.path import join, split
 import shutil
+import argparse
 
-LOCAL_FOLDER = 'K:\\Subjects'
+parser = argparse.ArgumentParser()
+parser.add_argument("-e", "--ephys", help="Ephys session", action='store_true')
+args = parser.parse_args()
+
+if args.ephys:
+    LOCAL_FOLDER = 'D:\\NeuropixelData'
+else:
+    LOCAL_FOLDER = 'K:\\Subjects'
 REMOTE_FOLDER = '\\\\imaging1-srv.science.ru.nl\\imaging1\\guido\\Subjects'
 
 # Search for transfer_me.flag
