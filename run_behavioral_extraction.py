@@ -261,6 +261,14 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
 
         # Get breathing
         breathing = data['analog'][:, 6]
+        
+        # Get distance of environment enters
+        env_start_dist = np.empty(env_start[:-1].shape)
+        env_end_dist = np.empty(env_end.shape)
+        for kk, this_enter in enumerate(env_start[:-1]):
+            env_start_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_enter))]
+        for kk, this_end in enumerate(env_end): 
+            env_end_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_end))]
 
         # Save extracted events as ONE files
         np.save(join(root, 'continuous.wheelDistance.npy'), wheel_distance[:-1])
@@ -273,7 +281,8 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
 
         # Build trial dataframe
         trials = pd.DataFrame(data={
-            'enterEnvironment': env_start[:-1], 'exitEnvironment': env_end,
+            'enterEnvTime': env_start[:-1], 'exitEnvTime': env_end,
+            'enterEnvDistance': env_start_dist, 'exitEnvDist': env_end_dist,
             'soundOnset': sound_onset, 'soundOffset': sound_offset, 'soundId': sound_id,
             'firstObjectAppear': first_obj_appear,
             'enterObj1': obj1_enter, 'enterObj2': obj2_enter, 'enterObj3': obj3_enter,
