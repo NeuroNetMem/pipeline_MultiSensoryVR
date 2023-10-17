@@ -282,7 +282,7 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
         # Build trial dataframe
         trials = pd.DataFrame(data={
             'enterEnvTime': env_start[:-1], 'exitEnvTime': env_end,
-            'enterEnvDistance': env_start_dist, 'exitEnvDist': env_end_dist,
+            'enterEnvDist': env_start_dist, 'exitEnvDist': env_end_dist,
             'soundOnset': sound_onset, 'soundOffset': sound_offset, 'soundId': sound_id,
             'firstObjectAppear': first_obj_appear,
             'enterObj1': obj1_enter, 'enterObj2': obj2_enter, 'enterObj3': obj3_enter,
