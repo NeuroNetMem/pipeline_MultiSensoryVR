@@ -6,18 +6,19 @@ Created on Mon Aug 21 15:08:20 2023
 """
 
 import os
-from os.path import join
+from os.path import join, isdir, isfile
 import numpy as np
 import pandas as pd
 from glob import glob
 from scipy.ndimage import gaussian_filter1d
+from itertools import chain
 from logreader import create_bp_structure, compute_onsets, compute_offsets
 
-DATA_FOLDER = 'U:\\guido\\Subjects'
+DATA_FOLDERS = ('U:\\guido\\Subjects', 'D:\\NeuropixelData')
 
 # Search for spikesort_me.flag
 print('Looking for extract_me.flag..')
-for root, directory, files in os.walk(DATA_FOLDER):
+for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA_FOLDERS):
     if 'extract_me.flag' in files:
         print(f'\nFound extract_me.flag in {root}')
 
@@ -31,16 +32,55 @@ for root, directory, files in os.walk(DATA_FOLDER):
 
         # Unpack log file
         data = create_bp_structure(data_file[0])
-
+        
         # Get timestamps in seconds relative to first timestamp
         time_s = (data['startTS'] - data['startTS'][0]) / 1000000
-
+        
         # Unwind looped timestamps
         if np.where(np.diff(time_s) < 0)[0].shape[0] == 1:
             loop_point = np.where(np.diff(time_s) < 0)[0][0]
             time_s[loop_point+1:] = time_s[loop_point+1:] + time_s[loop_point]
         elif np.where(np.diff(time_s) < 0)[0].shape[0] > 1:
             print('Multiple time loop points detected! This is not supported yet.')
+        
+        # If this is an ephys session, synchronize timestamps with ephys
+        if isdir(join(root, 'raw_ephys_data')):
+            print('Ephys session detected, synchronizing timestamps with nidq')
+            if not isfile(join(root, 'raw_ephys_data', '_spikeglx_sync.times.npy')):
+                print('Run ephys pipeline before behavioral extraction')
+                continue
+            
+            # Load in nidq sync pulses
+            sync_times = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.times.npy'))
+            sync_polarities = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.polarities.npy'))
+            sync_channels = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.channels.npy'))
+            nidq_pulses = sync_times[(sync_channels == 0) & (sync_polarities == 1)]
+            
+            # Load in Totalsync pulses
+            totalsync_pulses = time_s[compute_onsets(data['digitalOut'][:, 4])]
+          
+            # Match the ephys and totalsync barcodes
+            time_shift = np.nan
+            for ii in range(nidq_pulses.shape[0]):
+                if np.sum(np.abs(np.diff(nidq_pulses)[ii:ii+20] - np.diff(totalsync_pulses)[:20])) < 0.01:
+                    
+                    # Ephys started before behavior
+                    time_shift = nidq_pulses[ii] - totalsync_pulses[0]
+                    new_totalsync = totalsync_pulses + time_shift
+                    break
+                    
+                if np.sum(np.abs(np.diff(totalsync_pulses)[ii:ii+20] - np.diff(nidq_pulses)[:20])) < 0.01:
+
+                    # Behavior started before ephys
+                    time_shift = -(totalsync_pulses[ii] - nidq_pulses[0])
+                    new_totalsync = totalsync_pulses + time_shift
+                    break
+            if np.isnan(time_shift):
+                print('No match found between ephys and totalsync barcodes!')
+                continue
+            
+            # Ephys is the main clock so shift the totalsync timestamps accordingly
+            time_s = time_s + time_shift
 
         # Extract trial onsets
         if compute_onsets(data['digitalIn'][:, 8])[0] < compute_onsets(data['digitalIn'][:, 12])[0]:

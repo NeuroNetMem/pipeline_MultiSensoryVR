@@ -4,8 +4,9 @@ Created on Wed Apr  5 14:02:41 2023 by Guido Meijer
 """
 
 import os
-from os.path import join, split, isfile
+from os.path import join, split, isfile, isdir
 import numpy as np
+import pandas as pd
 from datetime import datetime
 import shutil
 from glob import glob
@@ -63,6 +64,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
     if 'spikesort_me.flag' in files:
         session_path = Path(root)
         print(f'\nFound spikesort_me.flag in {root}')
+        print(f'Starting pipeline at {datetime.now().strftime("%H:%M")}')
         
         # Restructure file and folders
         if 'probe00' not in os.listdir(join(root, 'raw_ephys_data')):
@@ -94,13 +96,11 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 
         probes = glob(join(root, 'raw_ephys_data', 'probe*'))
         for i, this_probe in enumerate(probes):
-             
-            # Compress raw data
-            print('Compressing raw binary file')
-            if len(glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.cbin'))) == 0:
-                task = EphysCompressNP1(session_path=Path(root), pname=this_probe[-7:])
-                task.run()
-                        
+            
+            if isdir(join(root, this_probe[-7:])):
+                print('Probe already processed, moving on')
+                continue
+            
             # Create probe sync file
             task = EphysSyncPulses(session_path=session_path, sync='nidq', pname=this_probe[-7:],
                                    sync_ext='bin', sync_namespace='spikeglx',
@@ -113,9 +113,10 @@ for root, directory, files in os.walk(DATA_FOLDER):
             task.run()
             
             # Compute raw ephys QC metrics
-            #task = ephysqc.EphysQC('', session_path=session_path, use_alyx=False)
-            #task.probe_path = Path(this_probe)
-            #task.run()
+            if not isfile(join(this_probe, '_iblqc_ephysSpectralDensityAP.power.npy')):
+                task = ephysqc.EphysQC('', session_path=session_path, use_alyx=False)
+                task.probe_path = Path(this_probe)
+                task.run()
             
             # Load in recording            
             rec = se.read_spikeglx(this_probe, stream_id=f'imec{split(this_probe)[-1][-1]}.ap')
@@ -131,9 +132,9 @@ for root, directory, files in os.walk(DATA_FOLDER):
             # Run spike sorting
             try:
                 print(f'Starting {split(this_probe)[-1]} spike sorting at {datetime.now().strftime("%H:%M")}')
-                #sort = run_sorter(SPIKE_SORTER, rec,
-                #                  output_folder=os.path.join(this_probe, SPIKE_SORTER + IDENTIFIER),
-                #                  verbose=True, docker_image=True)
+                sort = run_sorter(SPIKE_SORTER, rec,
+                                  output_folder=os.path.join(this_probe, SPIKE_SORTER + IDENTIFIER),
+                                  verbose=True, docker_image=True)
             except Exception as err:
                 print(err)
                 
@@ -145,49 +146,51 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 # Continue with next recording
                 continue
             
-            """
-            # Export to phy
-            we = extract_waveforms(rec, sort,
-                                   os.path.join(this_probe, SPIKE_SORTER + IDENTIFIER, 'sorter_output', 'waveforms'),
-                                   sparse=True)
-            
-            # some computations are done before to control all options
-            compute_spike_amplitudes(we)
-            compute_correlograms(we)
-            compute_quality_metrics(we, metric_names=['snr', 'isi_violation', 'presence_ratio'])
-            export_report(we, output_folder=os.path.join(this_probe, SPIKE_SORTER + IDENTIFIER, 'sorter_report'))
-            """
-            
             # Run Bombcell
             orig_ap_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.bin'))
             meta_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.meta'))
             print('Running Bombcell')
-            eng.run_bombcell(join(this_probe, SPIKE_SORTER + IDENTIFIER, 'sorter_output'),
+            eng.run_bombcell(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output'),
                              orig_ap_file[0],
                              meta_file[0],  
                              join(this_probe, SPIKE_SORTER+IDENTIFIER, 'bombcell_qc'),
                              this_probe,
                              nargout=0)
             
+            # Export spike sorting to alf files
+            if not isdir(join(root, this_probe[-7:])):
+                os.mkdir(join(root, this_probe[-7:]))
+            ks2_to_alf(Path(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output')),
+                       Path(join(root, 'raw_ephys_data', this_probe[-7:])),
+                       Path(join(root, this_probe[-7:])))
+            
+            # Add bombcell QC to alf folder
+            shutil.copy(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'cluster_bc_unitType.tsv'),
+                        join(root, this_probe[-7:], 'cluster_bc_unitType.tsv'))
+            bc_unittype = pd.read_csv(join(root, this_probe[-7:], 'cluster_bc_unitType.tsv'), sep='\t')
+            np.save(join(root, this_probe[-7:], 'clusters.bcUnitType'), bc_unittype['bc_unitType'])
+            
+            # Synchronize spike sorting to nidq clock
+            ap_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.cbin'))[0]
+            sync_spike_sorting(Path(ap_file), Path(join(root, this_probe[-7:])))
+            
             # Delete copied recording.dat file
             if isfile(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'recording.dat')):
                 os.remove(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'recording.dat'))
                 
+            # Compress raw data
+            if len(glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.cbin'))) == 0:
+                print('Compressing raw binary file')
+                task = EphysCompressNP1(session_path=Path(root), pname=this_probe[-7:])
+                task.run()
+                
             # Delete original raw data
-            orig_ap_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.bin'))
             if len(orig_ap_file) == 1:
-                os.remove(orig_ap_file[0])
-            
-            # Export spike sorting to alf files
-            os.mkdir(join(root, 'alf'))
-            os.mkdir(join(root, 'alf', this_probe[-7:]))
-            ks2_to_alf(Path(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output')),
-                       Path(join(root, 'raw_ephys_data', this_probe[-7:])),
-                       Path(join(root, 'alf', this_probe[-7:])))
-            
-            # Synchronize spike sorting to nidq clock
-            ap_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.cbin'))[0]
-            sync_spike_sorting(Path(ap_file), Path(join(root, 'alf', this_probe[-7:])))
+                try:
+                    os.remove(orig_ap_file[0])
+                except:
+                    print('Could not remove uncompressed ap bin file, delete manually')
+                    continue
             
             print(f'Done! At {datetime.now().strftime("%H:%M")}')
         
