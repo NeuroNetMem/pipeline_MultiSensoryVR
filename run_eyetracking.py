@@ -145,7 +145,7 @@ for root, directory, files in os.walk(SERVER_PATH):
             os.remove(h264_server_path)
                     
         # Create delete_me.flag to flag for future deletion
-        with open(join(root, 'delete_me.flag'), 'w') as fp:
+        with open(join(local_folder_path, 'delete_me.flag'), 'w') as fp:
             pass
         
         # Delete eyetrack_me.flag
