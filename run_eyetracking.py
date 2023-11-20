@@ -135,7 +135,6 @@ for root, directory, files in os.walk(SERVER_PATH):
         print('\nCopying results to server')
         shutil.copy(eye_local_path, join(root, 'raw_video_data', split(eye_local_path)[1]))
         shutil.copy(compr_local_path, join(root, 'raw_video_data', split(compr_local_path)[1]))
-        shutil.copy(label_local_path, join(root, 'raw_video_data', split(label_local_path)[1]))
         shutil.copy(label_local_path,
                     join(root, 'raw_video_data', split(mp4_local_path)[1][:-4] + '_labeled.mp4'))
         shutil.copy(join(local_folder_path, 'pupil.csv'), join(root, 'pupil.csv'))
