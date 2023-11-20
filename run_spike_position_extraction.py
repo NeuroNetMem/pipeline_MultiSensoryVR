@@ -37,7 +37,7 @@ for root, directory, files in os.walk(DATA_FOLDER):
                 spike_dist[ii] = wheel_dist[np.argmin(np.abs(wheel_times - spike_time))]
 
             # Save result
-            np.save(join(root, 'spikes.distances.npy'), spike_dist)
+            np.save(join(this_probe, 'spikes.distances.npy'), spike_dist)
             print(f'Successfully extracted spike distances in {root}')
 
         # Remove flag

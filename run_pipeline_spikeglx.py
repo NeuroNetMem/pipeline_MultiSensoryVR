@@ -170,6 +170,16 @@ for root, directory, files in os.walk(DATA_FOLDER):
             bc_unittype = pd.read_csv(join(root, this_probe[-7:], 'cluster_bc_unitType.tsv'), sep='\t')
             np.save(join(root, this_probe[-7:], 'clusters.bcUnitType'), bc_unittype['bc_unitType'])
             
+            # Add other neuron metrics to alf folder
+            shutil.copy(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'cluster_frac_RPVs.tsv'),
+                        join(root, this_probe[-7:], 'cluster_frac_RPVs.tsv'))
+            shutil.copy(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'cluster_presence_ratio.tsv'),
+                        join(root, this_probe[-7:], 'cluster_presence_ratio.tsv'))
+            shutil.copy(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'cluster_SNR.tsv'),
+                        join(root, this_probe[-7:], 'cluster_SNR.tsv'))
+            shutil.copy(join(this_probe, SPIKE_SORTER+IDENTIFIER, 'sorter_output', 'similar_templates.npy'),
+                        join(root, this_probe[-7:], 'similar_templates.npy'))
+            
             # Synchronize spike sorting to nidq clock
             ap_file = glob(join(root, 'raw_ephys_data', this_probe[-7:], '*ap.cbin'))[0]
             sync_spike_sorting(Path(ap_file), Path(join(root, this_probe[-7:])))

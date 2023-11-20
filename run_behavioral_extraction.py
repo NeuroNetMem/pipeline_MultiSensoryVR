@@ -32,43 +32,44 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
 
         # Unpack log file
         data = create_bp_structure(data_file[0])
-        
+
         # Get timestamps in seconds relative to first timestamp
         time_s = (data['startTS'] - data['startTS'][0]) / 1000000
-        
+
         # Unwind looped timestamps
         if np.where(np.diff(time_s) < 0)[0].shape[0] == 1:
             loop_point = np.where(np.diff(time_s) < 0)[0][0]
             time_s[loop_point+1:] = time_s[loop_point+1:] + time_s[loop_point]
         elif np.where(np.diff(time_s) < 0)[0].shape[0] > 1:
             print('Multiple time loop points detected! This is not supported yet.')
-        
+
         # If this is an ephys session, synchronize timestamps with ephys
         if isdir(join(root, 'raw_ephys_data')):
             print('Ephys session detected, synchronizing timestamps with nidq')
             if not isfile(join(root, 'raw_ephys_data', '_spikeglx_sync.times.npy')):
                 print('Run ephys pipeline before behavioral extraction')
                 continue
-            
+
             # Load in nidq sync pulses
             sync_times = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.times.npy'))
-            sync_polarities = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.polarities.npy'))
+            sync_polarities = np.load(
+                join(root, 'raw_ephys_data', '_spikeglx_sync.polarities.npy'))
             sync_channels = np.load(join(root, 'raw_ephys_data', '_spikeglx_sync.channels.npy'))
             nidq_pulses = sync_times[(sync_channels == 0) & (sync_polarities == 1)]
-            
+
             # Load in Totalsync pulses
             totalsync_pulses = time_s[compute_onsets(data['digitalOut'][:, 4])]
-          
+
             # Match the ephys and totalsync barcodes
             time_shift = np.nan
             for ii in range(nidq_pulses.shape[0]):
                 if np.sum(np.abs(np.diff(nidq_pulses)[ii:ii+20] - np.diff(totalsync_pulses)[:20])) < 0.01:
-                    
+
                     # Ephys started before behavior
                     time_shift = nidq_pulses[ii] - totalsync_pulses[0]
                     new_totalsync = totalsync_pulses + time_shift
                     break
-                    
+
                 if np.sum(np.abs(np.diff(totalsync_pulses)[ii:ii+20] - np.diff(nidq_pulses)[:20])) < 0.01:
 
                     # Behavior started before ephys
@@ -78,10 +79,16 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
             if np.isnan(time_shift):
                 print('No match found between ephys and totalsync barcodes!')
                 continue
-            
+
             # Ephys is the main clock so shift the totalsync timestamps accordingly
             time_s = time_s + time_shift
 
+        # Check if there are trials
+        if len(compute_onsets(data['digitalIn'][:, 12])) == 0:
+            print('No trials found, deleting extraction flag')
+            os.remove(join(root, 'extract_me.flag'))
+            continue
+            
         # Extract trial onsets
         if compute_onsets(data['digitalIn'][:, 8])[0] < compute_onsets(data['digitalIn'][:, 12])[0]:
             # Missed the first environment TTL so first trial starts at 0 s
@@ -267,7 +274,7 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
         env_end_dist = np.empty(env_end.shape)
         for kk, this_enter in enumerate(env_start[:-1]):
             env_start_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_enter))]
-        for kk, this_end in enumerate(env_end): 
+        for kk, this_end in enumerate(env_end):
             env_end_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_end))]
 
         # Save extracted events as ONE files
