@@ -91,38 +91,39 @@ for root, directory, files in os.walk(SERVER_PATH):
         deeplabcut.filterpredictions(DLC_EYE_TRACK, [eye_local_path])
         
         # Get pupil by fitting elipse using least squares method
-        dlc_out = glob(join(local_folder_path, '*pupil-tracking*_filtered.csv'))[0]
-        eye_dlc = pd.read_csv(dlc_out, header=[1, 2], index_col=0)
-        eye_df = pd.DataFrame()
-        print('\nFitting ellipse to tracked points')
-        for i in eye_dlc.index.values:
-            if np.mod(i, 5000) == 0:
-                print(f'Video frame {i} of {eye_dlc.shape[0]}')
-            x = eye_dlc.xs('x', level=1, axis=1).loc[i].values
-            y = eye_dlc.xs('y', level=1, axis=1).loc[i].values
-            xy_prob = eye_dlc.xs('likelihood', level=1, axis=1).loc[i].values
-            if np.sum(xy_prob > MIN_PROB) >= MIN_POINTS:
-                x = x[xy_prob > MIN_PROB]
-                y = y[xy_prob > MIN_PROB]
-                data = np.stack((x, y)).T
-                lsqe.fit(np.stack((x, y)).T)
-                center, width, height, phi = lsqe.as_parameters()
-                center_x, center_y = center[0], center[1]
-                if np.abs(width/height) > MAX_WH_RATIO:
+        if not isfile(join(local_folder_path, 'pupil.csv')):
+            dlc_out = glob(join(local_folder_path, '*pupil-tracking*_filtered.csv'))[0]
+            eye_dlc = pd.read_csv(dlc_out, header=[1, 2], index_col=0)
+            eye_df = pd.DataFrame()
+            print('\nFitting ellipse to tracked points')
+            for i in eye_dlc.index.values:
+                if np.mod(i, 5000) == 0:
+                    print(f'Video frame {i} of {eye_dlc.shape[0]}')
+                x = eye_dlc.xs('x', level=1, axis=1).loc[i].values
+                y = eye_dlc.xs('y', level=1, axis=1).loc[i].values
+                xy_prob = eye_dlc.xs('likelihood', level=1, axis=1).loc[i].values
+                if np.sum(xy_prob > MIN_PROB) >= MIN_POINTS:
+                    x = x[xy_prob > MIN_PROB]
+                    y = y[xy_prob > MIN_PROB]
+                    data = np.stack((x, y)).T
+                    lsqe.fit(np.stack((x, y)).T)
+                    center, width, height, phi = lsqe.as_parameters()
+                    center_x, center_y = center[0], center[1]
+                    if np.abs(width/height) > MAX_WH_RATIO:
+                        center_x, center_y, width, height, phi = np.nan, np.nan, np.nan, np.nan, np.nan
+                else:
                     center_x, center_y, width, height, phi = np.nan, np.nan, np.nan, np.nan, np.nan
-            else:
-                center_x, center_y, width, height, phi = np.nan, np.nan, np.nan, np.nan, np.nan
-            eye_df = pd.concat((eye_df, pd.DataFrame(index=[eye_df.shape[0]+1], data={
-                'center_x': center[0], 'center_y': center[1],
-                'width': width*2, 'height': height*2, 'phi': phi})))
-          
-        # Smooth pupil diameter
-        print('\nSmoothing pupil traces')
-        eye_df['width_smooth'] = smooth_pupil(eye_df['width'])
-        eye_df['height_smooth'] = smooth_pupil(eye_df['height'])
-        
-        # Save pupil tracking to disk
-        eye_df.to_csv(join(local_folder_path, 'pupil.csv'), index=False)
+                eye_df = pd.concat((eye_df, pd.DataFrame(index=[eye_df.shape[0]+1], data={
+                    'center_x': center[0], 'center_y': center[1],
+                    'width': width*2, 'height': height*2, 'phi': phi})))
+              
+            # Smooth pupil diameter
+            print('\nSmoothing pupil traces')
+            eye_df['width_smooth'] = smooth_pupil(eye_df['width'])
+            eye_df['height_smooth'] = smooth_pupil(eye_df['height'])
+            
+            # Save pupil tracking to disk
+            eye_df.to_csv(join(local_folder_path, 'pupil.csv'), index=False)
         
         # Compress video
         print('\nCompressing video')
@@ -141,12 +142,12 @@ for root, directory, files in os.walk(SERVER_PATH):
         
         # Delete original uncompressed video from server
         if isfile(join(root, 'raw_video_data', split(compr_local_path)[1])):
-            os.delete(h264_server_path)
+            os.remove(h264_server_path)
                     
         # Create delete_me.flag to flag for future deletion
         with open(join(root, 'delete_me.flag'), 'w') as fp:
             pass
         
         # Delete eyetrack_me.flag
-        os.delete(join(root, 'eyetrack_me.flag'))
+        os.remove(join(root, 'eyetrack_me.flag'))
         print('\nDone! Deleted eyetrack_me.flag\n')
