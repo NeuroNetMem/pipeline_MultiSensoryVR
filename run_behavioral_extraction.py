@@ -99,6 +99,11 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
         # Extract reward times
         reward_times = time_s[compute_onsets(data['digitalOut'][:, 0])]
 
+        # For some reason sometimes the traces are inverted, invert back if necessary
+        for jj in range(8, 11):
+            if np.sum(data['digitalIn'][:, jj] == 1) > np.sum(data['digitalIn'][:, jj] == 0):
+                data['digitalIn'][:, jj] = 1 - data['digitalIn'][:, jj]
+
         # Extract all event timings
         all_env_end = time_s[compute_onsets(data['digitalIn'][:, 12])]
         all_first_obj_appear = time_s[compute_onsets(data['digitalIn'][:, 13])]
@@ -115,7 +120,7 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
         all_sound0_offsets = time_s[compute_onsets(data['digitalIn'][:, 5])]
         all_sound1_offsets = time_s[compute_onsets(data['digitalIn'][:, 6])]
         all_sound2_offsets = time_s[compute_onsets(data['digitalIn'][:, 7])]
-
+        
         # Only keep environment entries which have a first object appear event and a trial end event
         # TO DO: change to object appear
         discard_env_start = np.zeros(env_start.shape[0])
