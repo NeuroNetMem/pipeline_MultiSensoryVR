@@ -270,18 +270,24 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
 
         # Get lick times
         lick_times = time_s[compute_onsets(data['digitalOut'][:, 5])]
-
+        
+        # Get lick positions
+        lick_pos = np.empty(lick_times.shape)
+        for ii, lick_time in enumerate(lick_times):
+            lick_pos[ii] = wheel_distance[np.argmin(np.abs(time_s - lick_time))]
+        
         # Get breathing
         breathing = data['analog'][:, 6]
         
-        # Get distance of environment enters
-        env_start_dist = np.empty(env_start[:-1].shape)
-        env_end_dist = np.empty(env_end.shape)
-        for kk, this_enter in enumerate(env_start[:-1]):
-            env_start_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_enter))]
-        for kk, this_end in enumerate(env_end):
-            env_end_dist[kk] = wheel_distance[np.argmin(np.abs(time_s - this_end))]
-
+        # Get event positions
+        print('Converting times into positions..')
+        lick_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in lick_times]
+        env_start_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in env_start[:-1]]
+        env_end_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in env_end]
+        obj1_enter_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in obj1_enter]
+        obj2_enter_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in obj2_enter]
+        obj3_enter_pos = [wheel_distance[np.argmin(np.abs(time_s - i))] for i in obj3_enter]
+            
         # Save extracted events as ONE files
         np.save(join(root, 'continuous.wheelDistance.npy'), wheel_distance[:-1])
         np.save(join(root, 'continuous.wheelSpeed.npy'), speed)
@@ -289,15 +295,17 @@ for root, directory, files in chain.from_iterable(os.walk(path) for path in DATA
         np.save(join(root, 'continuous.times.npy'), time_s[:-1])
         np.save(join(root, 'camera.times.npy'), camera_times)
         np.save(join(root, 'lick.times.npy'), lick_times)
+        np.save(join(root, 'lick.positions.npy'), lick_pos)
         np.save(join(root, 'reward.times.npy'), reward_times)
 
         # Build trial dataframe
         trials = pd.DataFrame(data={
             'enterEnvTime': env_start[:-1], 'exitEnvTime': env_end,
-            'enterEnvDist': env_start_dist, 'exitEnvDist': env_end_dist,
+            'enterEnvPos': env_start_pos, 'exitEnvPos': env_end_pos,
             'soundOnset': sound_onset, 'soundOffset': sound_offset, 'soundId': sound_id,
             'firstObjectAppear': first_obj_appear,
             'enterObj1': obj1_enter, 'enterObj2': obj2_enter, 'enterObj3': obj3_enter,
+            'enterObj1Pos': obj1_enter_pos, 'enterObj2Pos': obj2_enter_pos, 'enterObj3Pos': obj3_enter_pos,
             'exitObj1': obj1_exit, 'exitObj2': obj2_exit, 'exitObj3': obj3_exit,
             'enterRewardZoneObj1': obj1_rewardzone, 'enterRewardZoneObj2': obj2_rewardzone,
             'enterRewardZoneObj3': obj3_rewardzone,
