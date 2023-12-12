@@ -27,7 +27,7 @@ for root, directory, files in os.walk(SERVER_PATH):
         h264_server_path = glob(join(root, 'raw_video_data', '*.h264'))
         if len(h264_server_path) == 0:
             print(f'No video found in {join(root, "raw_video_data")}')
-            os.delete(join(root, 'eyetrack_me.flag'))
+            os.remove(join(root, 'eyetrack_me.flag'))
             continue
         elif len(h264_server_path) > 1:
             print(f'Multiple videos found in {join(root, "raw_video_data")}')
@@ -47,7 +47,7 @@ for root, directory, files in os.walk(SERVER_PATH):
         if not isfile(join(local_folder_path, split(h264_server_path)[1])):
             print('\nCopying video to local disk for processing')
             shutil.copy(h264_server_path, h264_local_path)
-         
+        
         # Convert video from .h264 to .mp4
         print('\nConvert video to mp4')
         mp4_local_path = join(local_folder_path, split(h264_server_path)[1][:-5] + '.mp4')
