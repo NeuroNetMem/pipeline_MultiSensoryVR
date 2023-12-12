@@ -24,7 +24,12 @@ REMOTE_FOLDER = '\\\\imaging1-srv.science.ru.nl\\imaging1\\guido\\Subjects'
 print('Looking for transfer_me.flag')
 for root, directory, files in os.walk(LOCAL_FOLDER):
     if 'transfer_me.flag' in files:
-       
+        if len(os.listdir(join(root, 'raw_behavior_data'))) == 0:
+            print('No behavioral data found, skipping transfer for this session')
+            continue
+        elif len(os.listdir(join(root, 'raw_behavior_data'))) > 0:
+            print('Warning: multiple behavior files found, will transfer all')
+        
         # Copy data
         print(f'\nCopying session {root} to server')
         shutil.copytree(root, join(REMOTE_FOLDER, split(split(root)[0])[1], split(root)[1]))
