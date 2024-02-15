@@ -27,9 +27,9 @@ for root, directory, files in os.walk(LOCAL_FOLDER):
         if len(os.listdir(join(root, 'raw_behavior_data'))) == 0:
             print('No behavioral data found, skipping transfer for this session')
             continue
-        elif len(os.listdir(join(root, 'raw_behavior_data'))) > 0:
+        elif len(os.listdir(join(root, 'raw_behavior_data'))) > 1:
             print('Warning: multiple behavior files found, will transfer all')
-        
+                    
         # Copy data
         print(f'\nCopying session {root} to server')
         shutil.copytree(root, join(REMOTE_FOLDER, split(split(root)[0])[1], split(root)[1]))
